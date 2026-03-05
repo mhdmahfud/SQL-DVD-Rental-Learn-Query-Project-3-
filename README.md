@@ -14,7 +14,7 @@ select
 	a.first_name, 
 	a.last_name 
 from actor a 
-where a.last_name like 'A%'
+where a.last_name like 'A%';
 ```
 
 ### 2. Scenario: Modern Film Analysis
@@ -42,7 +42,7 @@ select
 	concat(c.first_name,' ',c.last_name) customer_name,
 	c.active 
 from customer c 
-where c.active <= 1;
+where c.active = 1;
 ```
 
 
@@ -108,10 +108,10 @@ select
 	sum(p.amount) as total_amount
 from customer c 
 inner join payment p on c.customer_id =p.customer_id 
-group by c.customer_id 
+GROUP BY c.customer_id, c.first_name, c.last_name
 order by sum(p.amount) desc ;
 ```
-###3. Scenario: High Spenders
+### 3. Scenario: High Spenders
 Filter only VIP customers.
 ---
 Task:
@@ -140,7 +140,7 @@ group by  f1.rating
 order by avg(f1.rental_rate) desc;
 ```
 
-###5. Scenario: Staff KPI
+### 5. Scenario: Staff KPI
 Measure employee productivity.
 ---
 Task:
@@ -195,7 +195,7 @@ Customer → Rental → Inventory → Film
 ```sql
 select 
 	concat(c.first_name , ' ', c.last_name ) as customer,
-	f.title as film_titler,
+	f.title as film_title,
 	r.rental_date 
 from customer c
 join rental r on c.customer_id = r.customer_id 
@@ -225,7 +225,7 @@ join country c2 on c.country_id = c2.country_id
 ```
 
 
-5. Scenario: Actor Portfolio (5 Tables)
+### 5. Scenario: Actor Portfolio (5 Tables)
 ---
 Task:
 Display actor name, film title, and film category.
@@ -241,7 +241,7 @@ join film_category fc on f.film_id = fc.film_id
 join category c on fc.category_id = c.category_id ;
 ```
 
-Excercide - Subquery
+## Exercise – Subquery
 
 ### 1. Scenario: Price Benchmarking
 Find films priced above the market average.
@@ -252,7 +252,7 @@ Display films with rental_rate higher than the average rental rate of all films.
 select 
 	f.film_id,
 	f.title,
-	f.rental_rate as 
+	f.rental_rate 
 from film f  
 where f.rental_rate > 
 	(select avg(f2.rental_rate) as avg_rental_rate
@@ -288,11 +288,11 @@ select
 from actor a 
 join film_actor fa  on a.actor_id  = fa.actor_id 
 join  film f on fa.film_id  = f.film_id 
-group by a.actor_id 
+group by a.actor_id, a.first_name, a.last_name
 having count(a.actor_id ) > 3;
 ```
 
-4. Scenario: Active Rental Customers
+### 4. Scenario: Active Rental Customers
 Cross-check customer data.
 ---
 Task:
@@ -330,7 +330,7 @@ WHERE
      FROM payment p2);
 ```
 
-EXERCISE - WINDOW FUNCTIONS
+## EXERCISE - WINDOW FUNCTIONS
 ### 1. Scenario: Film Ranking
 ---
 Task:
@@ -349,14 +349,16 @@ from film f ;
 Task:
 Rank customers (DENSE_RANK) based on their total payments.
 ```sql
-SELECT 
-    f.film_id,
-    f.title,
-    f.rental_rate,
-    DENSE_RANK() OVER (ORDER BY sum(f.rental_rate) DESC) AS rental_rank
-FROM 
-    film f
-group by f.film_id , f.title ;
+SELECT
+    c.customer_id,
+    c.first_name,
+    c.last_name,
+    SUM(p.amount) AS total_payment,
+    DENSE_RANK() OVER (ORDER BY SUM(p.amount) DESC) AS payment_rank
+FROM customer c
+JOIN payment p ON p.customer_id = c.customer_id
+GROUP BY c.customer_id, c.first_name, c.last_name
+ORDER BY payment_rank, c.customer_id;
 ```
 
 ### 3. Scenario: Release Order
@@ -368,7 +370,7 @@ select
 	f.film_id,
 	f.title ,
 	f.release_year ,
-	row_number() over (order by f.release_year desc)
+	row_number() over (order by f.release_year desc) as release_rownum
 from film f ;
 ```
 
@@ -392,7 +394,7 @@ from payment p
 ---
 Task:
 Use subquery and window function to retrieve only the largest payment transaction (Rank 1) for each customer.
-```
+```sql
 WITH ranked_payments AS (
     SELECT 
         p.payment_id,
@@ -414,14 +416,14 @@ WHERE
 ```
 
 ## EXERCISE -  CTE & CLASSIFICATION
-CTE(COMMN table EXPRESSIONS)
+CTE (Common Table Expressions)
 
 ### 1. Scenario: Loyal Customers
 --- 
 Task:
 Use a CTE to filter customers with more than 15 rental transactions.
 ```sql
- with customer_transaktion as(
+ with customer_transaction as(
 	select 
 		r.customer_id ,
 		count(r.rental_id ) total_rental
@@ -429,7 +431,7 @@ Use a CTE to filter customers with more than 15 rental transactions.
 	group by r.customer_id 
  ) 
 select * 
-from customer_transaktion 
+from customer_transaction 
 where total_rental > 15;
 ```
 
@@ -451,7 +453,7 @@ with RENTAL_COUNT AS(
 select film_id , title  ,rental_film  from RENTAL_COUNT 
 ```
 
-##**CASE WHEN**
+## CASE WHEN
 
 ### 3. Scenario: Price Labeling
 ---
@@ -486,13 +488,11 @@ select
 	p.customer_id ,
 	sum(p.amount) total_spend,
 	case
-		when sum(p.amount) > 200  then 'High Vaue'
-		when sum(p.amount) between 100 and 200 then 'Mediium'
+		when sum(p.amount) > 200  then 'High Value'
+		when sum(p.amount) between 100 and 200 then 'Medium'
 		else 'Low'
-	end as Segmnet
+	end as segment
 from payment p 
 group by p.customer_id
 order by total_spend desc;
 ```
-
-----------------------------------------------------------------
